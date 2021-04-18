@@ -1,0 +1,84 @@
+## Script 2 (Activity 3)
+
+## This code performs data exploration with initial visualisation on raw data
+## Performs the attempt creating a trend model for milk production
+## Plot the actual and predicted values of milk production using “ggplot” functions
+
+# Map 1-based optional input ports to variables: cad
+cad <- maml.mapInputPort(1) # class: data.frame
+# Source the .R file from the zip
+source("src/milkutilities-8.R") #Reads a zipped R script
+
+# Ensure the dataTime column is preserved
+cad$dateTime <- to.POSIXct(cad$Year, cad$Month.Number)
+
+## Initial Visualisation
+# Plot actual values (raw data) for milk production
+library(ggplot2)
+p0 <- ggplot(cad, aes(x=dateTime, y=Milk.Prod)) + 
+  geom_line() +
+  xlab("Time") + 
+  ylab("CA Milk Production (1M lbs)") +
+  ggtitle("Time series plot of CA milk production Raw data") +
+  theme(text = element_text(size=16))
+p0
+
+# # linear ^1 trend line
+# lm0 <- lm(Milk.Prod ~ dateTime-1, data=cad)
+# p1 <- geom_line(aes(x=dateTime, y=predict(lm0,cad)), color="red", linetype="dashed")
+
+## Create a ^3 Trend Model
+# Compute a linear model (lm1) of the trend and add the predicted values (Pred1) to the data frame
+lm1 <- lm(Milk.Prod ~ dateTime + Month.Count + Month.CountSqred + Month.CountCubed -1, data=cad)
+summary(lm1)
+cad$Pred1 <- predict(lm1, cad)
+
+# Plot the actual and predicted values of milk production using “ggplot” functions
+# Plot non-linear(^3) trend model (added as a layer on raw model) for milk production
+library(ggplot2)
+plot.milk.line <- function(data){
+  ggplot(data, aes(x = dateTime, y = Milk.Prod)) +
+    geom_line() +
+    geom_line(aes(x = dateTime, y = Pred1), color = "red") +
+    xlab("Time") + 
+    ylab("CA Milk Production (1M lbs)") +
+    ggtitle("Time series plot of CA milk production Raw data\n with Trend model^(1,2,3)") +
+    theme(text = element_text(size=16))
+}
+plot.milk.line(cad) 
+
+# Residuals = the differences between the actual and the predicted values
+# Actual: Milk.Prod, predicted: Pred1 (raw/untrained data)
+library(dplyr)
+cad$Resid  <- cad$Milk.Prod - cad$Pred1
+
+# Make the time series plot of the residuals
+plot.resid.scatter <- function(data){
+  ggplot(data, aes(x = dateTime, y = Resid)) + 
+  germ_line() +
+  geom_point() +
+  xlab("Time") + 
+  ylab("Residual") +
+  ggtitle("Residual plot of Trend model^(1,2,3) for\n CA milk production") +
+  theme(text = element_text(size=16))
+ }
+plot.resid.scatter(cad)
+
+# Look at the month to month variation in the residuals with a box plot. 
+# Need to make Month an ordered factor to make this work.
+cad$Month <- factor(order.month(cad$Month))
+
+plot.resid.box <- function(data){
+  ggplot(data, aes(x = Month, y = Resid)) +
+    geom_boxplot() +
+    xlab("Month") +
+    ylab("Residual") + 
+    ggtitle("Residual boxplot of Trend model^(1,2,3) by Month for\n CA milk production") +
+    theme(text = element_text(size=16))
+}
+plot.resid.box(cad)
+
+# str(cad) # Check the result
+
+# Select data.frame to be sent to the output Dataset port
+maml.mapOutputPort("cad");

@@ -1,0 +1,18 @@
+## Script 3 (Activity 5)
+
+## The code in this file create training set 
+## for training regression model
+
+# Map 1-based optional input ports to variables: cad
+cad <- maml.mapInputPort(1) # class: data.frame
+
+# Eliminate the last one year (12 months) of 
+# the dairy data frame. 
+testLen<- 12
+trainLen <- nrow(cad) - testLen
+cadtrain <- cad[1:trainLen, ]
+
+#str(cadtrain) # Check the result
+
+# Select data.frame to be sent to the output Dataset port
+maml.mapOutputPort("cadtrain");
